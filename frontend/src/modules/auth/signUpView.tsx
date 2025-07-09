@@ -37,7 +37,7 @@ const formSchema = z
 export const SignUpView = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -47,32 +47,35 @@ export const SignUpView = () => {
       password: "",
       confirmpassword: "",
     },
-  }); 
-  const router = useRouter();
-const onSubmit = async (values: z.infer<typeof formSchema>) => {
-  setError(null);
-  setIsSubmitting(true);
+  });
 
-  try {
-    const res = await axios.post("http://localhost:8288/auth/signup", {
-      name: values.name,
-      email: values.email,
-      password: values.password,
-    });
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setError(null);
+    setIsSubmitting(true);
 
-    console.log("Registration Success:", res.data);
-    router.push("/sign-in");
-  } catch (error: any) {
-    console.error(
-      "Registration Error:",
-      error.response?.data?.message || error.message
-    );
-    setError(error.response?.data?.message || "Something went wrong");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+    try {
+      const res = await axios.post("http://localhost:8288/auth/signup", {
+        name: values.name,
+        email: values.email,
+        password: values.password,
+      });
 
+      console.log("Registration Success:", res.data);
+      router.push("/sign-in");
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error(
+          "Registration Error:",
+          error.response?.data?.message || error.message
+        );
+        setError(error.response?.data?.message || "Something went wrong");
+      } else {
+        setError("An unknown error occurred");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
   <div className="flex justify-center items-center min-h-screen px-4">
@@ -90,10 +93,10 @@ const onSubmit = async (values: z.infer<typeof formSchema>) => {
           {["name", "email", "password", "confirmpassword"].map((fieldName, idx) => (
             <div className="grid gap-3 text-xl" key={idx}>
               <FormField
-                control={form.control}
-                name={fieldName as any}
-                render={({ field }) => (
-                  <FormItem>
+                    control={form.control}
+                    name={fieldName as keyof z.infer<typeof formSchema>}
+                    render={({ field }) => (
+                    <FormItem>
                     <FormLabel className="capitalize">
                       {field.name === "confirmpassword"
                         ? "Confirm Password"

@@ -32,7 +32,7 @@ export const CommentForm = ({
 
       setLoading(false);
 
-      if (res.ok) {
+     if (res.ok) {
         setContent('');
         toast.success(parentId ? 'Reply posted!' : 'Comment posted!');
         onSuccess?.(); 
@@ -40,11 +40,15 @@ export const CommentForm = ({
         const error = await res.json();
         toast.error(error.message || 'Failed to post comment');
       }
-    } catch (error) {
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message || 'Network error. Please try again.');
+      } else {
+        toast.error('An unknown error occurred.');
+      }
+    } finally {
       setLoading(false);
-      toast.error('Network error. Please try again.');
-    }
-  };
+    }}
 
   return (
     <div className="space-y-2 mt-4">

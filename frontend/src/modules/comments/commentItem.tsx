@@ -16,7 +16,12 @@ interface Comment {
   replies?: Comment[];
 }
 
-export const CommentItem = ({ comment }: { comment: Comment }) => {
+interface CommentItemProps {
+  comment: Comment;
+  onReply?: () => void;
+}
+
+export const CommentItem = ({ comment, onReply }: CommentItemProps) => {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [showReplies, setShowReplies] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -51,11 +56,12 @@ export const CommentItem = ({ comment }: { comment: Comment }) => {
       if (res.ok) {
         toast.success('Comment updated');
         setIsEditing(false);
+        if (onReply) await onReply(); // Refresh comments
       } else {
         toast.error('Failed to update comment');
       }
-    } catch (err) {
-      toast.error('Network error');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Network error');
     }
   };
 
@@ -74,11 +80,12 @@ export const CommentItem = ({ comment }: { comment: Comment }) => {
       if (res.ok) {
         toast.success('Comment deleted');
         setIsDeleted(true);
+        if (onReply) await onReply();
       } else {
         toast.error('Failed to delete');
       }
-    } catch (err) {
-      toast.error('Network error');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Network error');
     }
   };
 
@@ -94,11 +101,12 @@ export const CommentItem = ({ comment }: { comment: Comment }) => {
       if (res.ok) {
         toast.success('Comment restored');
         setIsDeleted(false);
+        if (onReply) await onReply();
       } else {
         toast.error('Failed to restore');
       }
-    } catch (err) {
-      toast.error('Network error');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Network error');
     }
   };
 
@@ -197,7 +205,13 @@ export const CommentItem = ({ comment }: { comment: Comment }) => {
 
           {showReplyForm && (
             <div className="mt-2">
-              <CommentForm parentId={comment.id} onSuccess={() => setShowReplyForm(false)} />
+              <CommentForm
+                parentId={comment.id}
+                onSuccess={async () => {
+                  setShowReplyForm(false);
+                  if (onReply) await onReply();
+                }}
+              />
             </div>
           )}
         </div>
@@ -206,7 +220,7 @@ export const CommentItem = ({ comment }: { comment: Comment }) => {
       {hasReplies && showReplies && (
         <div className="ml-10 mt-2 space-y-3">
           {comment.replies?.map((reply) => (
-            <CommentItem key={reply.id} comment={reply} />
+            <CommentItem key={reply.id} comment={reply} onReply={onReply} />
           ))}
         </div>
       )}

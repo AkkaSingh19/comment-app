@@ -41,50 +41,54 @@ export const SignInView = () => {
   });
 
   useEffect(() => {
-  const checkAuth = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+    const checkAuth = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      try {
+        const res = await axios.get("http://localhost:8288/auth/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.status === 200) {
+          router.push("/");
+        }
+      } catch {
+        console.error("Token invalid, removing from localStorage.");
+        localStorage.removeItem("token");
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setError(null);
+    setIsSubmitting(true);
 
     try {
-      const res = await axios.get("http://localhost:8288/auth/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await axios.post("http://localhost:8288/auth/signin", values);
+      const token =
+        res.data?.token?.accessToken || res.data?.accessToken || res.data?.token;
 
-      if (res.status === 200) {
-        router.push("/"); 
+      if (token) {
+        localStorage.setItem("token", token);
+        router.push("/");
+      } else {
+        setError("Unexpected response from server");
       }
-    } catch (err) {
-      console.error("Token invalid, removing from localStorage.");
-      localStorage.removeItem("token");
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        setError(error.response?.data?.message || "Invalid credentials");
+      } else {
+        setError("Something went wrong");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
-  checkAuth();
-}, [router]);
-
- const onSubmit = async (values: z.infer<typeof formSchema>) => {
-  setError(null);
-  setIsSubmitting(true);
-
-  try {
-    const res = await axios.post("http://localhost:8288/auth/signin", values);
-    const token = res.data?.token?.accessToken || res.data?.accessToken || res.data?.token;
-    
-    if (token) {
-      localStorage.setItem("token", token);
-      router.push("/");
-    } else {
-      setError("Unexpected response from server");
-    }
-  } catch (error: any) {
-    setError(error.response?.data?.message || "Invalid credentials"); 
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
 
   return (
   <div className="flex justify-center items-center min-h-screen px-4">

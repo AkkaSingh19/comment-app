@@ -1,0 +1,39 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: comment_app
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+
+  backend:
+    build: ./backend
+    container_name: nest-backend
+    restart: always
+    ports:
+      - '8288:8288'
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/comment_app
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    container_name: next-frontend
+    restart: always
+    ports:
+      - '3000:3000'
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+
